@@ -190,7 +190,8 @@ class TerminalProgressBar(ProgressBar):
     def _get_in_progress_line(self, progress):
         line = "[{{}}] ETA: {eta}".format(
             eta=timestamp2timedelta(progress.eta()))
-        percent_str = " {}% ".format(int(100 * progress.progress))
+        percent_str = " {}: {}% ".format(
+            self.task, int(100 * progress.progress))
         try:
             width, _ = get_terminal_size()
         except:
@@ -260,10 +261,10 @@ class AutoProgressBar(ProgressBar):
         The minimum ETA threshold for displaying the progress bar.
     """
 
-    def __init__(self, delegate, min_eta=1., task="Simulation"):
+    def __init__(self, delegate, min_eta=1.):
         self.delegate = delegate
 
-        super(AutoProgressBar, self).__init__(task)
+        super(AutoProgressBar, self).__init__(delegate.task)
 
         self.min_eta = min_eta
         self._visible = False
@@ -276,6 +277,14 @@ class AutoProgressBar(ProgressBar):
         elif long_eta or progress.finished:
             self._visible = True
             self.delegate.update(progress)
+
+    @property
+    def task(self):
+        return self.delegate.task
+
+    @task.setter
+    def task(self, value):
+        self.delegate.task = value
 
 
 class ProgressUpdater(object):
@@ -389,9 +398,9 @@ class ProgressTracker(object):
     progress_bar : :class:`ProgressBar` or :class:`ProgressUpdater`
         The progress bar to display the progress.
     """
-    def __init__(self, max_steps, progress_bar):
+    def __init__(self, max_steps, progress_bar, task="Simulation"):
         self.progress = Progress(max_steps)
-        self.progress_bar = wrap_with_progressupdater(progress_bar)
+        self.progress_bar = wrap_with_progressupdater(progress_bar, task=task)
 
     def __enter__(self):
         self.progress.__enter__()
@@ -471,7 +480,7 @@ def get_default_progressupdater(progress_bar):
             warnings.warn(str(e))
 
 
-def wrap_with_progressupdater(progress_bar=True):
+def wrap_with_progressupdater(progress_bar=True, task="Simulation"):
     """Wraps a progress bar with the default progress updater.
 
     If it is already wrapped by an progress updater, then this does nothing.
@@ -491,6 +500,8 @@ def wrap_with_progressupdater(progress_bar=True):
 
     if progress_bar is True:
         progress_bar = get_default_progressbar()
+
+    progress_bar.task = task
 
     if isinstance(progress_bar, ProgressUpdater):
         return progress_bar

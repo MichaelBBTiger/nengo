@@ -166,6 +166,6 @@ class IPython2ProgressBar(ProgressBar):
                 self.task,
                 timestamp2timedelta(progress.elapsed_seconds()))
         else:
-            self._widget.text = "{progress:.0f}%, ETA: {eta}".format(
-                progress=100 * progress.progress,
+            self._widget.text = "{task}: {progress:.0f}%, ETA: {eta}".format(
+                task=self.task, progress=100 * progress.progress,
                 eta=timestamp2timedelta(progress.eta()))
