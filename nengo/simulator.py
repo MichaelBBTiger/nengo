@@ -140,11 +140,12 @@ class Simulator(object):
         if network is not None:
             net_objs = set(network.all_objects)
             max_steps = max(1, len(network.all_objects))
-            # Build the network into the model
             with ProgressTracker(
                     max_steps, progress_bar, task="Build") as progress:
                 self.model.build_callback = (
                     lambda obj: progress.step() if obj in net_objs else None)
+
+                # Build the network into the model
                 self.model.build(network)
 
         # -- map from Signal.base -> ndarray
