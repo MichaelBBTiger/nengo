@@ -1,5 +1,4 @@
 import logging
-import weakref
 
 import numpy as np
 
@@ -32,7 +31,6 @@ class ConnectionLearningRuleTypeParam(LearningRuleTypeParam):
     """Connection-specific validation for learning rules."""
 
     def __set__(self, conn, rule):
-        conn._learning_rule = None
         super(ConnectionLearningRuleTypeParam, self).__set__(conn, rule)
 
     def validate_rule(self, conn, rule):
@@ -443,22 +441,24 @@ class Connection(NengoObject):
     @property
     def learning_rule(self):
         """(LearningRule or iterable) Connectable learning rule object(s)."""
-        if self.learning_rule_type is not None and self._learning_rule is None:
-            types = self.learning_rule_type
-            if isinstance(types, dict):
-                self._learning_rule = type(types)()  # dict of same type
-                for k, v in iteritems(types):
-                    self._learning_rule[k] = LearningRule(self, v)
-            elif is_iterable(types):
-                self._learning_rule = [LearningRule(self, v) for v in types]
-            elif isinstance(types, LearningRuleType):
-                self._learning_rule = LearningRule(self, types)
-            else:
-                raise ValidationError(
-                    "Invalid type %r" % type(types).__name__,
-                    attr='learning_rule_type', obj=self)
+        if self.learning_rule_type is None:
+            return None
 
-        return self._learning_rule
+        types = self.learning_rule_type
+        if isinstance(types, dict):
+            learning_rule = type(types)()  # dict of same type
+            for k, v in iteritems(types):
+                learning_rule[k] = LearningRule(self, v)
+        elif is_iterable(types):
+            learning_rule = [LearningRule(self, v) for v in types]
+        elif isinstance(types, LearningRuleType):
+            learning_rule = LearningRule(self, types)
+        else:
+            raise ValidationError(
+                "Invalid type %r" % type(types).__name__,
+                attr='learning_rule_type', obj=self)
+
+        return learning_rule
 
     @property
     def post_obj(self):
@@ -515,7 +515,7 @@ class LearningRule(object):
     """
 
     def __init__(self, connection, learning_rule_type):
-        self._connection = weakref.ref(connection)
+        self._connection = connection
         self.learning_rule_type = learning_rule_type
 
     def __repr__(self):
@@ -526,10 +526,19 @@ class LearningRule(object):
         return "<LearningRule modifying %s with type %s>" % (
             self.connection, self.learning_rule_type)
 
+    def __eq__(self, other):
+        return (
+            self._connection is other._connection and
+            self.learning_rule_type == other.learning_rule_type)
+
+    def __hash__(self):
+        # +1 to avoid collision with ensemble
+        return hash(self._connection) + hash(self.learning_rule_type) + 1
+
     @property
     def connection(self):
         """(Connection) The connection modified by the learning rule."""
-        return self._connection()
+        return self._connection
 
     @property
     def error_type(self):
