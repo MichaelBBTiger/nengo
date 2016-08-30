@@ -67,6 +67,9 @@ Release History
   `#1107 <https://github.com/nengo/nengo/pull/1107>`_)
 - The synapse methods ``filt`` and ``filtfilt`` now support lists as input.
   (`#1123 <https://github.com/nengo/nengo/pull/1123>`_)
+- Nodes support array views as input.
+  (`#1156 <https://github.com/nengo/nengo/issues/1156>`_,
+  `#1157 <https://github.com/nengo/nengo/pull/1157>`_)
 
 2.1.2 (June 27, 2016)
 =====================
