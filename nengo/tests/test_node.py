@@ -364,6 +364,7 @@ def test_node_with_offset_array_view(Simulator, seed):
     with nengo.Network(seed=seed) as model:
         node = nengo.Node(v[1])
         probe = nengo.Probe(node)
+        assert probe  # suppress never used warning
 
     with Simulator(model):
         pass
