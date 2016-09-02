@@ -8,7 +8,8 @@ from numpy.testing import assert_equal
 import pytest
 
 import nengo
-from nengo.cache import DecoderCache, Fingerprint, get_fragment_size
+from nengo.cache import (
+    CacheIndex, DecoderCache, Fingerprint, get_fragment_size)
 from nengo.exceptions import FingerprintError
 from nengo.solvers import LstsqL2
 from nengo.utils.compat import int_types
@@ -114,16 +115,16 @@ def test_corrupted_decoder_cache_index(tmpdir):
 
     with DecoderCache(cache_dir=cache_dir):
         pass  # Initialize cache with required files
-    assert len(os.listdir(cache_dir)) == 2  # index, legacy.txt
+    assert len(os.listdir(cache_dir)) == 1  # index
 
     # Write corrupted index
-    with open(os.path.join(cache_dir, DecoderCache._INDEX), 'w') as f:
+    with open(os.path.join(cache_dir, CacheIndex._INDEX), 'w') as f:
         f.write('(d')  # empty dict, but missing '.' at the end
 
     # Try to load index
     with DecoderCache(cache_dir=cache_dir):
         pass
-    assert len(os.listdir(cache_dir)) == 2  # index, legacy.txt
+    assert len(os.listdir(cache_dir)) == 1  # index
 
 
 def test_decoder_cache_invalidation(tmpdir):
@@ -305,7 +306,7 @@ def test_cache_works(tmpdir, RefSimulator, seed):
     assert len(os.listdir(cache_dir)) == 0
     with RefSimulator(model, model=nengo.builder.Model(
             dt=0.001, decoder_cache=DecoderCache(cache_dir=cache_dir))):
-        assert len(os.listdir(cache_dir)) == 3  # legacy.txt, index, and *.nco
+        assert len(os.listdir(cache_dir)) == 2  # index, and *.nco
 
 
 def test_cache_not_used_without_seed(tmpdir, RefSimulator):
@@ -318,7 +319,7 @@ def test_cache_not_used_without_seed(tmpdir, RefSimulator):
     assert len(os.listdir(cache_dir)) == 0
     with RefSimulator(model, model=nengo.builder.Model(
             dt=0.001, decoder_cache=DecoderCache(cache_dir=cache_dir))):
-        assert len(os.listdir(cache_dir)) == 2  # legacy.txt and index
+        assert len(os.listdir(cache_dir)) == 1  # index
 
 
 def build_many_ensembles(cache_dir, RefSimulator):
@@ -565,9 +566,6 @@ cache = nengo.cache.DecoderCache()
 def test_warns_out_of_context(tmpdir):
     cache_dir = str(tmpdir)
     cache = DecoderCache(cache_dir=cache_dir)
-
-    with warns(UserWarning):
-        cache.shrink()
 
     solver_mock = SolverMock()
     solver = cache.wrap_solver(solver_mock)
