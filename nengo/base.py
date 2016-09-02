@@ -122,7 +122,7 @@ class NengoObject(with_metaclass(NetworkMember, SupportDefaultsMixin)):
 
     @classmethod
     def params(cls):
-        """Returns a list of parameter names that can be set."""
+        """Returns an iterator of parameter names that can be set."""
         return iter_params(cls)
 
     def copy(self, add_to_container=True):
