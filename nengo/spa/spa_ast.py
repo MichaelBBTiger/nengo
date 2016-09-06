@@ -797,7 +797,7 @@ class Translate(Node):
         return SemanticPointer(np.dot(tr, self.source.evaluate().v))
 
     def __str__(self):
-        return 'reinterpret({})'.format(self.source)
+        return 'translate({})'.format(self.source)
 
 
 class Effect(Node):
