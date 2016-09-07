@@ -171,11 +171,8 @@ class ObjView(object):
             raise ValidationError("Invalid slice '%s' of %s"
                                   % (self.slice, self.obj), attr='key')
 
-    def __getstate__(self):
-        raise NotImplementedError("Nengo objects do not support pickling")
-
-    def __setstate__(self, state):
-        raise NotImplementedError("Nengo objects do not support pickling")
+    def copy(self):
+        return copy(self)
 
     def __len__(self):
         return self.size_out

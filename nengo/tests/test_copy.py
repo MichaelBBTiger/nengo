@@ -178,6 +178,64 @@ def test_network_copy_builds(RefSimulator):
     RefSimulator(make_network().copy())
 
 
+def test_copy_obj_view():
+    with nengo.Network() as model:
+        ens = nengo.Ensemble(10, 4)
+        original = ens[:2]
+
+    cp = original.copy()
+
+    assert cp is not original
+    assert cp.obj is ens
+    assert cp.slice == original.slice
+
+
+def test_copy_obj_view_in_connection():
+    with nengo.Network() as original:
+        node = nengo.Node([0.1, 0.2])
+        ens = nengo.Ensemble(10, 2)
+        nengo.Connection(node[0], ens[1])
+        nengo.Connection(node[1], ens[0])
+
+    cp = original.copy()
+    assert cp.nodes[0] is not node
+    assert cp.ensembles[0] is not ens
+    assert cp.connections[0].pre.obj is cp.nodes[0]
+    assert cp.connections[1].pre.obj is cp.nodes[0]
+    assert cp.connections[0].post.obj is cp.ensembles[0]
+    assert cp.connections[1].post.obj is cp.ensembles[0]
+
+
+def test_pickle_obj_view():
+    with nengo.Network() as model:
+        ens = nengo.Ensemble(10, 4)
+        original = ens[:2]
+
+    cp = pickle.loads(pickle.dumps(original))
+
+    assert cp is not original
+    assert cp.obj is not ens
+    assert cp.obj.n_neurons == 10
+    assert cp.obj.dimensions == 4
+    assert cp.slice == original.slice
+
+
+def test_pickle_obj_view_in_connection():
+    with nengo.Network() as original:
+        node = nengo.Node([0.1, 0.2])
+        ens = nengo.Ensemble(10, 2)
+        nengo.Connection(node[0], ens[1])
+        nengo.Connection(node[1], ens[0])
+
+    cp = pickle.loads(pickle.dumps(original))
+    assert cp.nodes[0] is not node
+    assert cp.ensembles[0] is not ens
+    assert cp.connections[0].pre.obj is cp.nodes[0]
+    assert cp.connections[1].pre.obj is cp.nodes[0]
+    assert cp.connections[0].post.obj is cp.ensembles[0]
+    assert cp.connections[1].post.obj is cp.ensembles[0]
+
+
 @pytest.mark.parametrize(('make_f', 'assert_f'), [
     (make_ensemble, assert_is_copy),
     (make_probe, assert_is_copy),
