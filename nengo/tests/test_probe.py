@@ -218,6 +218,18 @@ def test_solver_defaults():
     assert e.solver is solver1
     assert f.solver is solver3
 
+def test_ensemble_encoders():
+    """Check encoders probed from ensemble are correct"""
+    with nengo.Network() as model:
+        ens = nengo.Ensemble(n_neurons=10, dimensions=2, radius=1.5)
+        p_enc = nengo.Probe(ens, 'encoders')
+
+    with nengo.Simulator(model) as sim:
+        sim.run(0.001)
+
+    assert np.allclose(
+        sim.data[p_enc]/(sim.data[ens].gain/ens.radius)[:, np.newaxis],
+        sim.data[ens].encoders)
 
 def test_obsolete_probes():
     with nengo.Network():
