@@ -218,6 +218,7 @@ def test_solver_defaults():
     assert e.solver is solver1
     assert f.solver is solver3
 
+
 def test_ensemble_encoders():
     """Check encoders probed from ensemble are correct"""
     with nengo.Network() as model:
@@ -230,6 +231,7 @@ def test_ensemble_encoders():
     assert np.allclose(
         sim.data[p_enc]/(sim.data[ens].gain/ens.radius)[:, np.newaxis],
         sim.data[ens].encoders)
+
 
 def test_obsolete_probes():
     with nengo.Network():
