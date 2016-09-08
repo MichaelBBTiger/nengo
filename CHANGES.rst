@@ -53,6 +53,9 @@ Release History
   `#1148 <https://github.com/nengo/nengo/pull/1148>`_)
 - Tweaked ``rasterplot`` so that spikes from different neurons don't overlap.
   (`#1121 <https://github.com/nengo/nengo/pull/1121>`_)
+- Allow to probe ``scaled_encoders`` on ensembles.
+  (`#1167 <https://github.com/nengo/nengo/pull/1167>`_,
+  `#1117 <https://github.com/nengo/nengo/issues/1117>`_)
 
 **Bug fixes**
 
