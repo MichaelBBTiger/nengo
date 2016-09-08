@@ -385,7 +385,7 @@ def test_voja_encoders(Simulator, nl_nodirect, rng, seed):
         conn = nengo.Connection(
             u, x, synapse=None, learning_rule_type=Voja(learning_rate=1e-1))
         p_enc = nengo.Probe(conn.learning_rule, 'scaled_encoders')
-        p_enc_ens = nengo.Probe(x, 'encoders')
+        p_enc_ens = nengo.Probe(x, 'scaled_encoders')
 
     with Simulator(m) as sim:
         sim.run(1.0)
