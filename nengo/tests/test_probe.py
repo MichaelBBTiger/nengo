@@ -223,7 +223,7 @@ def test_ensemble_encoders():
     """Check encoders probed from ensemble are correct"""
     with nengo.Network() as model:
         ens = nengo.Ensemble(n_neurons=10, dimensions=2, radius=1.5)
-        p_enc = nengo.Probe(ens, 'encoders')
+        p_enc = nengo.Probe(ens, 'scaled_encoders')
 
     with nengo.Simulator(model) as sim:
         sim.run(0.001)
