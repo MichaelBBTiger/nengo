@@ -25,6 +25,8 @@ warnings.filterwarnings('once', category=MemoryLeakWarning)
 
 
 def timestamp2timedelta(timestamp):
+    if timestamp == -1:
+        return "Unknown"
     return timedelta(seconds=np.ceil(timestamp))
 
 
@@ -149,7 +151,7 @@ class ProgressBar(object):
 
     supports_fast_ipynb_updates = False
 
-    def __init__(self, task="Simulation"):
+    def __init__(self, task):
         self.task = task
 
     def update(self, progress):
@@ -169,15 +171,15 @@ class NoProgressBar(ProgressBar):
     Helpful in headless situations or when using Nengo as a library.
     """
 
+    def __init__(self, task=None):
+        self.task = task
+
     def update(self, progress):
         pass
 
 
 class TerminalProgressBar(ProgressBar):
     """A progress bar that is displayed as ASCII output on `stdout`."""
-
-    def __init__(self, task="Simulation"):
-        super(TerminalProgressBar, self).__init__(task)
 
     def update(self, progress):
         if progress.finished:
@@ -190,7 +192,7 @@ class TerminalProgressBar(ProgressBar):
     def _get_in_progress_line(self, progress):
         line = "[{{}}] ETA: {eta}".format(
             eta=timestamp2timedelta(progress.eta()))
-        percent_str = " {}: {}% ".format(
+        percent_str = " {}... {}% ".format(
             self.task, int(100 * progress.progress))
         try:
             width, _ = get_terminal_size()
@@ -232,7 +234,7 @@ class WriteProgressToFile(ProgressBar):
         Path to the file to write the progress to.
     """
 
-    def __init__(self, filename, task="Simulation"):
+    def __init__(self, filename, task):
         self.filename = filename
         super(WriteProgressToFile, self).__init__(task)
 
@@ -398,9 +400,10 @@ class ProgressTracker(object):
     progress_bar : :class:`ProgressBar` or :class:`ProgressUpdater`
         The progress bar to display the progress.
     """
-    def __init__(self, max_steps, progress_bar, task="Simulation"):
+    def __init__(self, max_steps, progress_bar, task):
         self.progress = Progress(max_steps)
-        self.progress_bar = wrap_with_progressupdater(progress_bar, task=task)
+        self.progress_bar = wrap_with_progressupdater(
+            task=task, progress_bar=progress_bar)
 
     def __enter__(self):
         self.progress.__enter__()
@@ -423,7 +426,7 @@ class ProgressTracker(object):
         self.progress_bar.update(self.progress)
 
 
-def get_default_progressbar():
+def get_default_progressbar(task):
     """The default progress bar to use depending on the execution environment.
 
     Returns
@@ -433,7 +436,7 @@ def get_default_progressbar():
     try:
         pbar = rc.getboolean('progress', 'progress_bar')
         if pbar:
-            return AutoProgressBar(TerminalProgressBar())
+            return AutoProgressBar(TerminalProgressBar(task=task))
         else:
             return NoProgressBar()
     except ValueError:
@@ -441,7 +444,7 @@ def get_default_progressbar():
 
     pbar = rc.get('progress', 'progress_bar')
     if pbar.lower() == 'auto':
-        return AutoProgressBar(TerminalProgressBar())
+        return AutoProgressBar(TerminalProgressBar(task=task))
     if pbar.lower() == 'none':
         return NoProgressBar()
 
@@ -480,7 +483,7 @@ def get_default_progressupdater(progress_bar):
             warnings.warn(str(e))
 
 
-def wrap_with_progressupdater(progress_bar=True, task="Simulation"):
+def wrap_with_progressupdater(task, progress_bar=True):
     """Wraps a progress bar with the default progress updater.
 
     If it is already wrapped by an progress updater, then this does nothing.
@@ -499,7 +502,7 @@ def wrap_with_progressupdater(progress_bar=True, task="Simulation"):
         return NoProgressBar()
 
     if progress_bar is True:
-        progress_bar = get_default_progressbar()
+        progress_bar = get_default_progressbar(task)
 
     progress_bar.task = task
 

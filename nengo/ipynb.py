@@ -150,7 +150,7 @@ class IPython2ProgressBar(ProgressBar):
 
     supports_fast_ipynb_updates = True
 
-    def __init__(self, task="Simulation"):
+    def __init__(self, task="Simulating"):
         super(IPython2ProgressBar, self).__init__(task)
         self._widget = IPythonProgressWidget()
         self._initialized = False
@@ -166,6 +166,6 @@ class IPython2ProgressBar(ProgressBar):
                 self.task,
                 timestamp2timedelta(progress.elapsed_seconds()))
         else:
-            self._widget.text = "{task}: {progress:.0f}%, ETA: {eta}".format(
+            self._widget.text = "{task}... {progress:.0f}%, ETA: {eta}".format(
                 task=self.task, progress=100 * progress.progress,
                 eta=timestamp2timedelta(progress.eta()))

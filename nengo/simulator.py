@@ -88,11 +88,10 @@ class Simulator(object):
         pass in a `.Model` instance.
     progress_bar : bool or `.ProgressBar` or `.ProgressUpdater`, optional \
                    (Default: True)
-        Progress bar for displaying the progress of the build and simulation
-        run.
+        Progress bar for displaying build and simulation progress.
 
-        If True, the default progress bar will be used.
-        If False, the progress bar will be disabled.
+        If ``True``, the default progress bar will be used.
+        If ``False``, the progress bar will be disabled.
         For more control over the progress bar, pass in a `.ProgressBar`
         or `.ProgressUpdater` instance.
 
@@ -138,15 +137,8 @@ class Simulator(object):
             self.model = model
 
         if network is not None:
-            net_objs = set(network.all_objects)
-            max_steps = max(1, len(network.all_objects))
-            with ProgressTracker(
-                    max_steps, progress_bar, task="Build") as progress:
-                self.model.build_callback = (
-                    lambda obj: progress.step() if obj in net_objs else None)
-
-                # Build the network into the model
-                self.model.build(network)
+            # Build the network into the model
+            self.model.build(network, progress_bar=self.progress_bar)
 
         # -- map from Signal.base -> ndarray
         self.signals = SignalDict()
@@ -296,7 +288,7 @@ class Simulator(object):
         """
         if progress_bar is None:
             progress_bar = self.progress_bar
-        with ProgressTracker(steps, progress_bar) as progress:
+        with ProgressTracker(steps, progress_bar, "Simulating") as progress:
             for i in range(steps):
                 self.step()
                 progress.step()
