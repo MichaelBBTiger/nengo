@@ -449,7 +449,7 @@ def get_default_progressbar(task):
         return NoProgressBar()
 
     try:
-        return _load_class(pbar)()
+        return _load_class(pbar)(task)
     except Exception as e:
         warnings.warn(str(e))
         return NoProgressBar()
