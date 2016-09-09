@@ -150,7 +150,7 @@ class IPython2ProgressBar(ProgressBar):
 
     supports_fast_ipynb_updates = True
 
-    def __init__(self, task="Simulating"):
+    def __init__(self, task):
         super(IPython2ProgressBar, self).__init__(task)
         self._widget = IPythonProgressWidget()
         self._initialized = False

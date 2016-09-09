@@ -172,7 +172,7 @@ class NoProgressBar(ProgressBar):
     """
 
     def __init__(self, task=None):
-        self.task = task
+        super(NoProgressBar, self).__init__(task=task)
 
     def update(self, progress):
         pass

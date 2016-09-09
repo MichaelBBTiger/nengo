@@ -66,7 +66,6 @@ def build_network(model, network, progress_bar=False):
     else:
         progress_bar = False
 
-    # net_objs = set(network.all_objects)
     max_steps = max(1, len(network.all_objects))
     progress = ProgressTracker(max_steps, progress_bar, task="Building")
 
