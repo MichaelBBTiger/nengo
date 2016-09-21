@@ -72,7 +72,7 @@ class ClassParams(object):
                  '_extra_params': self._extra_params}
 
         # Store all of the things we set in the params
-        for attr in self.params():
+        for attr in self.params:
             param = self.get_param(attr)
             if self in param:
                 state[attr] = param.get_default(self)
@@ -85,14 +85,14 @@ class ClassParams(object):
         self._extra_params = state['_extra_params']
 
         # Restore all of the things we set in the params
-        for attr in self.params():
+        for attr in self.params:
             if attr in state:
                 self.get_param(attr).set_default(self, state[attr])
 
     def __str__(self):
         name = self._configures.__name__
         lines = ["Parameters configured for %s:" % name]
-        for attr in self.params():
+        for attr in self.params:
             if self in self.get_param(attr):
                 lines.append("  %s: %s" % (attr, getattr(self, attr)))
         if len(lines) > 1:
@@ -119,6 +119,7 @@ class ClassParams(object):
     def extra_params(self):
         return tuple(self._extra_params)
 
+    @property
     def params(self):
         return iter(self.default_params + self.extra_params)
 
@@ -207,7 +208,7 @@ class InstanceParams(object):
 
     def __str__(self):
         lines = ["Parameters set for %s:" % str(self._configures)]
-        for attr in self._clsparams.params():
+        for attr in self._clsparams.params:
             if self in self._clsparams.get_param(attr):
                 lines.append("  %s: %s" % (attr, getattr(self, attr)))
         return "\n".join(lines)

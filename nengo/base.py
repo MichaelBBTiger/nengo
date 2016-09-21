@@ -75,7 +75,7 @@ class NengoObject(with_metaclass(NetworkMember, SupportDefaultsMixin)):
         state = self.__dict__.copy()
         del state['_initialized']
 
-        for attr in self.params():
+        for attr in self.params:
             param = getattr(type(self), attr)
             if self in param:
                 state[attr] = getattr(self, attr)
@@ -86,7 +86,7 @@ class NengoObject(with_metaclass(NetworkMember, SupportDefaultsMixin)):
         for attr in self._param_init_order:
             setattr(self, attr, state.pop(attr))
 
-        for attr in self.params():
+        for attr in self.params:
             if attr in state:
                 setattr(self, attr, state.pop(attr))
 
@@ -120,10 +120,10 @@ class NengoObject(with_metaclass(NetworkMember, SupportDefaultsMixin)):
             ' "%s"' % self.label,
             " at 0x%x" % id(self) if include_id else "")
 
-    @classmethod
-    def params(cls):
+    @property
+    def params(self):
         """Returns an iterator of parameter names that can be set."""
-        return iter_params(cls)
+        return iter_params(self)
 
     def copy(self, add_to_container=True):
         with warnings.catch_warnings():
