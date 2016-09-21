@@ -179,7 +179,7 @@ def test_network_copy_builds(RefSimulator):
 
 
 def test_copy_obj_view():
-    with nengo.Network() as model:
+    with nengo.Network():
         ens = nengo.Ensemble(10, 4)
         original = ens[:2]
 
@@ -207,7 +207,7 @@ def test_copy_obj_view_in_connection():
 
 
 def test_pickle_obj_view():
-    with nengo.Network() as model:
+    with nengo.Network():
         ens = nengo.Ensemble(10, 4)
         original = ens[:2]
 
