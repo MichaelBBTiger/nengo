@@ -263,15 +263,39 @@ class Node(object):
 
     Attributes
     ----------
-    fixed : bool
-        Indicates if the value of this node is static or changes with time.
+    staticity : int
+        Staticity of the node. See `.Node.Staticity` which also lists valid
+        values.
     type : :class:`Type`
         Type that this node evaluates to. This will be set to ``None`` until
         the type inference was run.
     """
-    def __init__(self, fixed):
-        self.fixed = fixed
+
+    class Staticity:
+        """Valid staticity values.
+
+        * ``FIXED``: Value of the node is static, i.e. does not change over
+          time.
+        * ``TRANSFORM_ONLY``: Value of the node changes over time, but can be
+          implemented with a transform on existing neural resources.
+        * ``DYNAMIC``: Value of the node is fully dynamic and needs additional
+          neural resources to be implemented.
+        """
+        FIXED = 0
+        TRANSFORM_ONLY = 1
+        DYNAMIC = 2
+
+    def __init__(self, staticity):
+        self.staticity = staticity
         self.type = None
+
+    @property
+    def fixed(self):
+        """Indicates whether the node value is static.
+
+        A static node value does not change over time.
+        """
+        return self.staticity <= self.Staticity.FIXED
 
     def __eq__(self, other):
         return (self.__class__ is other.__class__ and
@@ -360,7 +384,7 @@ class Source(Node):
 class Scalar(Source):
     """A fixed scalar."""
     def __init__(self, value):
-        super(Scalar, self).__init__(fixed=True)
+        super(Scalar, self).__init__(staticity=Node.Staticity.FIXED)
         self.value = value
         self.type = TScalar
 
@@ -383,7 +407,7 @@ class Symbol(Source):
     The `key` has to start with a capatial letter.
     """
     def __init__(self, key):
-        super(Symbol, self).__init__(fixed=True)
+        super(Symbol, self).__init__(staticity=Node.Staticity.FIXED)
         self.validate(key)
         self.key = key
 
@@ -416,7 +440,7 @@ class Zero(Source):
     """Zero which can act as scalar or zero vector."""
 
     def __init__(self):
-        super(Zero, self).__init__(fixed=True)
+        super(Zero, self).__init__(staticity=Node.Staticity.FIXED)
 
     def infer_types(self, root_module, context_type):
         if context_type is None:
@@ -446,7 +470,7 @@ class Module(Source):
     for modules that act as sink.
     """
     def __init__(self, name):
-        super(Module, self).__init__(fixed=False)
+        super(Module, self).__init__(staticity=Node.Staticity.TRANSFORM_ONLY)
         self.name = name
 
     def infer_types(self, root_module, context_type):
@@ -483,7 +507,12 @@ class BinaryNode(Source):
         lhs = ensure_node(lhs)
         rhs = ensure_node(rhs)
 
-        super(BinaryNode, self).__init__(fixed=lhs.fixed and rhs.fixed)
+        if not lhs.fixed and not rhs.fixed:
+            staticity = Node.Staticity.DYNAMIC
+        else:
+            staticity = max(lhs.staticity, rhs.staticity)
+
+        super(BinaryNode, self).__init__(staticity=staticity)
         self.lhs = lhs
         self.rhs = rhs
 
@@ -494,7 +523,7 @@ class BinaryNode(Source):
         raise NotImplementedError()
 
     def _connect_binary_operation(self, context, net):
-        with context.active_net:
+        with context.root_module:
             for artifact in self.lhs.construct(context):
                 nengo.Connection(
                     artifact.nengo_source, net.A, transform=artifact.transform,
@@ -618,7 +647,7 @@ class UnaryOperation(Source):
     """
     def __init__(self, source, operator):
         source = ensure_node(source)
-        super(UnaryOperation, self).__init__(fixed=source.fixed)
+        super(UnaryOperation, self).__init__(staticity=source.staticity)
         self.source = source
         self.operator = operator
 
@@ -725,7 +754,7 @@ class DotProduct(BinaryNode):
 class Reinterpret(Node):
     def __init__(self, source, vocab=None):
         source = ensure_node(source)
-        super(Reinterpret, self).__init__(fixed=source.fixed)
+        super(Reinterpret, self).__init__(staticity=source.staticity)
         self.source = source
         self.vocab = vocab
 
@@ -766,7 +795,7 @@ class Reinterpret(Node):
 class Translate(Node):
     def __init__(self, source, vocab=None):
         source = ensure_node(source)
-        super(Translate, self).__init__(fixed=source.fixed)
+        super(Translate, self).__init__(staticity=source.staticity)
         self.source = source
         self.vocab = vocab
 
@@ -819,7 +848,7 @@ class Effect(Node):
     """
     def __init__(self, sink, source, channeled=False):
         source = ensure_node(source)
-        super(Effect, self).__init__(fixed=source.fixed)
+        super(Effect, self).__init__(staticity=source.staticity)
         self.type = TEffect
         self.sink = ensure_node(sink)
         self.source = ensure_node(source)
@@ -868,7 +897,8 @@ class Effect(Node):
 class Effects(Node):
     """Multiple effects."""
     def __init__(self, *effects):
-        super(Effects, self).__init__(fixed=all(e.fixed for e in effects))
+        super(Effects, self).__init__(
+            staticity=max(e.staticity for e in effects))
         self.type = TEffects
         self.effects = effects
 
@@ -892,7 +922,7 @@ class Sink(Node):
     """SPA module that acts as sink identified by its name."""
 
     def __init__(self, name):
-        super(Sink, self).__init__(fixed=False)
+        super(Sink, self).__init__(staticity=Node.Staticity.DYNAMIC)
         self.name = name
 
     def infer_types(self, root_module, context_type):
@@ -927,7 +957,7 @@ class Action(Node):
         Name of the action.
     """
     def __init__(self, condition, effects, index=0, name=None):
-        super(Action, self).__init__(fixed=False)
+        super(Action, self).__init__(staticity=Node.Staticity.DYNAMIC)
         self.type = TAction
         self.index = index
         self.condition = ensure_node(condition)
@@ -959,7 +989,12 @@ class Action(Node):
                 label = str(self) if self.name is None else self.name
 
         # construct bg utility
-        condition_artifacts = self.condition.construct(context)
+        if self.condition.staticity <= Node.Staticity.TRANSFORM_ONLY:
+            condition_context = context
+        else:
+            condition_context = context.subcontext(active_net=nengo.Network(
+                label='condition: ' + str(self.condition)))
+        condition_artifacts = self.condition.construct(condition_context)
 
         # construct effects
         self.effects.construct(context)
